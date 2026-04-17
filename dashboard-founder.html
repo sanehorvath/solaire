@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solaire — Founder Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-text">☀️ SOLAIRE</div>
+      <div class="logo-sub">Founder Access</div>
+    </div>
+    <div class="sidebar-user" id="sidebar-user"></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Vue d'ensemble</div>
+      <div class="nav-item active" data-view="overview"><span class="nav-icon">📊</span> Dashboard</div>
+      <div class="nav-item" data-view="objectives"><span class="nav-icon">🎯</span> Objectifs</div>
+
+      <div class="nav-section-label">Opérations</div>
+      <div class="nav-item" data-view="tasks"><span class="nav-icon">✅</span> Tâches <span class="nav-badge" id="sidebar-late-badge" style="display:none">0</span></div>
+      <div class="nav-item" data-view="calendar"><span class="nav-icon">📅</span> Calendrier</div>
+
+      <div class="nav-section-label">Commercial</div>
+      <div class="nav-item" data-view="contacts"><span class="nav-icon">👥</span> Contacts CRM</div>
+      <div class="nav-item" data-view="mail"><span class="nav-icon">✉️</span> Messagerie</div>
+
+      <div class="nav-section-label">Finance</div>
+      <div class="nav-item" data-view="calculator"><span class="nav-icon">💰</span> Calculateur</div>
+    </nav>
+    <div class="sidebar-footer">
+      <button onclick="authLogout()">🚪 Se déconnecter</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <div class="demo-banner">🧪 Mode Démo — Les données ne sont pas sauvegardées. Connecter Supabase pour la persistance.</div>
+
+    <!-- ==================== OVERVIEW ==================== -->
+    <div id="view-overview" class="view active">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle">Vue d'ensemble de l'activité Solaire</div>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Budget Total</div>
+            <div class="stat-value text-accent">1.15M€</div>
+            <div class="stat-sub">Levée de fonds</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Engagé</div>
+            <div class="stat-value" id="ov-engage">—</div>
+            <div class="stat-sub" id="ov-engage-pct">0% du budget</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Payé</div>
+            <div class="stat-value text-green" id="ov-paye">—</div>
+            <div class="stat-sub">Décaissé</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Tâches en retard</div>
+            <div class="stat-value text-red" id="ov-late-tasks">—</div>
+            <div class="stat-sub" id="ov-tasks-total">Sur — tâches</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">RDV à venir</div>
+            <div class="stat-value" id="ov-upcoming-appts">—</div>
+            <div class="stat-sub">Dans les 30 jours</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <!-- Prochains RDV -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">📅 Prochains rendez-vous</span>
+              <button class="btn btn-ghost btn-sm" onclick="switchView('calendar')">Voir tout →</button>
+            </div>
+            <div id="ov-appts-list"></div>
+          </div>
+          <!-- Tâches urgentes -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">⚠️ Tâches prioritaires</span>
+              <button class="btn btn-ghost btn-sm" onclick="switchView('tasks')">Voir tout →</button>
+            </div>
+            <div id="ov-tasks-list"></div>
+          </div>
+        </div>
+
+        <!-- Objectifs progress -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🎯 Suivi des objectifs</span>
+            <button class="btn btn-ghost btn-sm" onclick="switchView('objectives')">Gérer →</button>
+          </div>
+          <div id="ov-objectives-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== OBJECTIVES ==================== -->
+    <div id="view-objectives" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🎯 Objectifs Globaux</div>
+          <div class="page-subtitle"><span id="obj-total">0</span> objectifs · Avancement moyen : <span id="obj-avg-progress">0%</span></div>
+        </div>
+        <button class="btn btn-primary" onclick="openNewObjective()">+ Nouvel objectif</button>
+      </div>
+      <div class="page-body">
+        <div id="objectives-list"></div>
+      </div>
+    </div>
+
+    <!-- ==================== TASKS ==================== -->
+    <div id="view-tasks" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">✅ Tâches</div>
+          <div class="page-subtitle"><span id="tasks-total-count">0</span> tâches · <span id="tasks-late-count" class="text-red">0</span> en retard</div>
+        </div>
+        <button class="btn btn-primary" id="btn-new-task">+ Nouvelle tâche</button>
+      </div>
+      <div class="page-body">
+        <div class="filters-bar">
+          <input type="text" id="task-search" placeholder="🔍 Rechercher..." style="max-width:220px">
+          <select id="task-filter-assignee"><option value="">Tous les membres</option></select>
+          <select id="task-filter-status">
+            <option value="">Tous les statuts</option>
+            <option value="a_faire">À faire</option>
+            <option value="en_cours">En cours</option>
+            <option value="en_retard">En retard</option>
+            <option value="termine">Terminé</option>
+          </select>
+          <select id="task-filter-objective"><option value="">Tous les objectifs</option></select>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tâche</th>
+                  <th>Priorité</th>
+                  <th>Assigné à</th>
+                  <th>Objectif</th>
+                  <th>Deadline</th>
+                  <th>Statut</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tasks-list"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== CALENDAR ==================== -->
+    <div id="view-calendar" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📅 Calendrier</div>
+          <div class="page-subtitle"><span id="cal-total-count">0</span> rendez-vous</div>
+        </div>
+        <button class="btn btn-primary" id="btn-new-appt">+ Nouveau RDV</button>
+      </div>
+      <div class="page-body">
+        <div class="filters-bar">
+          <input type="text" id="cal-search" placeholder="🔍 Rechercher un RDV...">
+        </div>
+        <div class="calendar-grid" id="calendar-list"></div>
+      </div>
+    </div>
+
+    <!-- ==================== CONTACTS ==================== -->
+    <div id="view-contacts" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">👥 CRM Contacts</div>
+          <div class="page-subtitle"><span id="contacts-total">0</span> prospects · <span id="contacts-chaud" class="text-red">0</span> chauds</div>
+        </div>
+        <button class="btn btn-primary" id="btn-new-contact">+ Nouveau contact</button>
+      </div>
+      <div class="page-body">
+        <div class="filters-bar">
+          <input type="text" id="contact-search" placeholder="🔍 Rechercher...">
+          <select id="contact-filter-temp">
+            <option value="">Toutes les températures</option>
+            <option value="chaud">🔴 Chaud</option>
+            <option value="tiede">🟡 Tiède</option>
+            <option value="froid">🔵 Froid</option>
+          </select>
+          <select id="contact-filter-assignee" style="display:none"><option value="">Tous les commerciaux</option></select>
+        </div>
+        <div class="contacts-grid" id="contacts-grid"></div>
+      </div>
+    </div>
+
+    <!-- ==================== MAIL ==================== -->
+    <div id="view-mail" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">✉️ Messagerie</div>
+          <div class="page-subtitle">Boîtes mail de l'équipe</div>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="mail-placeholder">
+          <div class="mail-icon">📬</div>
+          <h3>Intégration Microsoft 365</h3>
+          <p>Les boîtes mail seront connectées via Microsoft Exchange / Outlook. Les comptes avec noms de domaine personnalisés sont supportés.</p>
+          <div class="mail-accounts">
+            <div class="mail-account-pill">👤 sane@solaire.com</div>
+            <div class="mail-account-pill">👤 matheo@solaire.com</div>
+            <div class="mail-account-pill">👤 clement@solaire.com</div>
+            <div class="mail-account-pill">👤 hugo@solaire.com</div>
+          </div>
+          <button class="btn btn-primary mt-4" style="margin-top:16px">Configurer Microsoft 365</button>
+          <p class="text-sm text-dim" style="margin-top:8px">Disponible en phase 2 — après connexion Supabase</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== CALCULATOR ==================== -->
+    <div id="view-calculator" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">💰 Calculateur Financier</div>
+          <div class="page-subtitle">Levée de fonds 1.15M€ — Suivi par tranche</div>
+        </div>
+        <button class="btn btn-primary" id="btn-new-trans">+ Nouvelle transaction</button>
+      </div>
+      <div class="page-body">
+        <!-- KPI row -->
+        <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="stat-card">
+            <div class="stat-label">Budget Total</div>
+            <div class="stat-value text-accent" id="calc-budget-total">1 150 000 €</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Engagé</div>
+            <div class="stat-value" id="calc-engage-total">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Payé</div>
+            <div class="stat-value text-green" id="calc-paye-total">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Reste à Engager</div>
+            <div class="stat-value text-blue" id="calc-reste-total">—</div>
+          </div>
+        </div>
+
+        <!-- Tranche overview -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+          <div class="card" id="tranche-card-T1">
+            <div class="card-header"><span class="card-title">T1 — Produit & Conformité</span><span class="text-sm text-muted">M0→M4</span></div>
+            <div class="stat-label">Budget : <strong class="text-accent">350 000 €</strong></div>
+            <div class="progress-bar mt-2 mb-2"><div class="progress-fill" id="calc-bar-T1" style="width:0%"></div></div>
+            <div class="flex justify-between text-sm text-muted">
+              <span>Engagé: <strong id="calc-engage-T1">—</strong></span>
+              <span id="calc-pct-T1">0%</span>
+            </div>
+            <div class="flex justify-between text-sm text-muted mt-1">
+              <span>Payé: <strong class="text-green" id="calc-paye-T1">—</strong></span>
+              <span>Reste: <strong id="calc-reste-T1">—</strong></span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">T2 — Branding & Production</span><span class="text-sm text-muted">M4→M7</span></div>
+            <div class="stat-label">Budget : <strong class="text-accent">250 000 €</strong></div>
+            <div class="progress-bar mt-2 mb-2"><div class="progress-fill" id="calc-bar-T2" style="width:0%"></div></div>
+            <div class="flex justify-between text-sm text-muted">
+              <span>Engagé: <strong id="calc-engage-T2">—</strong></span>
+              <span id="calc-pct-T2">0%</span>
+            </div>
+            <div class="flex justify-between text-sm text-muted mt-1">
+              <span>Payé: <strong class="text-green" id="calc-paye-T2">—</strong></span>
+              <span>Reste: <strong id="calc-reste-T2">—</strong></span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">T3 — Déploiement & Marketing</span><span class="text-sm text-muted">M7→M12</span></div>
+            <div class="stat-label">Budget : <strong class="text-accent">550 000 €</strong></div>
+            <div class="progress-bar mt-2 mb-2"><div class="progress-fill" id="calc-bar-T3" style="width:0%"></div></div>
+            <div class="flex justify-between text-sm text-muted">
+              <span>Engagé: <strong id="calc-engage-T3">—</strong></span>
+              <span id="calc-pct-T3">0%</span>
+            </div>
+            <div class="flex justify-between text-sm text-muted mt-1">
+              <span>Payé: <strong class="text-green" id="calc-paye-T3">—</strong></span>
+              <span>Reste: <strong id="calc-reste-T3">—</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Journal transactions -->
+        <div class="card" style="padding:0">
+          <div class="card-header" style="padding:16px 20px">
+            <span class="card-title">Journal des transactions</span>
+            <div class="flex gap-2">
+              <input type="text" id="calc-search" placeholder="🔍 Rechercher..." style="width:200px">
+              <select id="calc-filter-tranche">
+                <option value="">Toutes les tranches</option>
+                <option value="T1">T1</option>
+                <option value="T2">T2</option>
+                <option value="T3">T3</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Poste</th>
+                  <th>Tranche</th>
+                  <th>Catégorie</th>
+                  <th>Fournisseur</th>
+                  <th>Engagé</th>
+                  <th>Payé</th>
+                  <th>Réf. Facture</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="transactions-list"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Task Modal -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="task-modal-title">Nouvelle tâche</span>
+      <button class="modal-close" onclick="closeModal('task-modal')">×</button>
+    </div>
+    <input type="hidden" id="task-id">
+    <div class="form-group">
+      <label class="form-label">Titre *</label>
+      <input type="text" id="task-title-input" placeholder="Titre de la tâche">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea id="task-desc" placeholder="Détails..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Assigné à</label>
+        <select id="task-assignee"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Objectif lié</label>
+        <select id="task-objective"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Priorité</label>
+        <select id="task-priority">
+          <option value="basse">Basse</option>
+          <option value="normale" selected>Normale</option>
+          <option value="haute">Haute</option>
+          <option value="urgente">Urgente</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Deadline</label>
+        <input type="date" id="task-deadline">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Statut</label>
+      <select id="task-status-select">
+        <option value="a_faire">À faire</option>
+        <option value="en_cours">En cours</option>
+        <option value="en_retard">En retard</option>
+        <option value="termine">Terminé</option>
+      </select>
+    </div>
+    <div id="task-form" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('task-modal')">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-task">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Appointment Modal -->
+<div class="modal-overlay" id="appt-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="appt-modal-title">Nouveau rendez-vous</span>
+      <button class="modal-close" onclick="closeModal('appt-modal')">×</button>
+    </div>
+    <input type="hidden" id="appt-id">
+    <div id="appt-form" style="display:none"></div>
+    <div class="form-group">
+      <label class="form-label">Titre *</label>
+      <input type="text" id="appt-title-input" placeholder="Nom du rendez-vous">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Date & heure *</label>
+        <input type="datetime-local" id="appt-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Assigné à</label>
+        <select id="appt-assignee"></select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Lieu</label>
+      <input type="text" id="appt-location" placeholder="Adresse ou lien Zoom">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea id="appt-notes-input" placeholder="Objectif du RDV, préparation..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('appt-modal')">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-appt">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Contact Modal -->
+<div class="modal-overlay" id="contact-modal">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <span class="modal-title" id="contact-modal-title">Nouveau contact</span>
+      <button class="modal-close" onclick="closeModal('contact-modal')">×</button>
+    </div>
+    <input type="hidden" id="contact-id">
+    <div id="contact-form" style="display:none"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nom *</label>
+        <input type="text" id="contact-name-input" placeholder="Prénom Nom">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Société</label>
+        <input type="text" id="contact-company-input" placeholder="Nom de la société">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Téléphone</label>
+        <input type="tel" id="contact-phone-input" placeholder="+33 6 12 34 56 78">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="contact-email-input" placeholder="contact@hotel.com">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Adresse</label>
+      <input type="text" id="contact-address-input" placeholder="Ville, Pays">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Température</label>
+        <select id="contact-temp-select">
+          <option value="froid">🔵 Froid</option>
+          <option value="tiede">🟡 Tiède</option>
+          <option value="chaud">🔴 Chaud</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date relance</label>
+        <input type="date" id="contact-followup-input">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea id="contact-notes-input" placeholder="Contexte, historique, prochaines étapes..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="btn-delete-contact" style="margin-right:auto;display:none">Supprimer</button>
+      <button class="btn btn-ghost" onclick="closeModal('contact-modal')">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-contact">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Objective Modal -->
+<div class="modal-overlay" id="obj-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="obj-modal-title">Nouvel objectif</span>
+      <button class="modal-close" onclick="closeModal('obj-modal')">×</button>
+    </div>
+    <input type="hidden" id="obj-id">
+    <div id="obj-form" style="display:none"></div>
+    <div class="form-group">
+      <label class="form-label">Titre *</label>
+      <input type="text" id="obj-title-input" placeholder="Titre de l'objectif">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea id="obj-desc-input" placeholder="Description détaillée..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Deadline</label>
+        <input type="date" id="obj-deadline-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Statut</label>
+        <select id="obj-status-select">
+          <option value="en_cours">En cours</option>
+          <option value="termine">Terminé</option>
+          <option value="bloque">Bloqué</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Avancement (%) : <span id="obj-progress-display">0</span>%</label>
+      <input type="range" id="obj-progress-input" min="0" max="100" value="0" oninput="document.getElementById('obj-progress-display').textContent=this.value" style="width:100%;accent-color:var(--accent)">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('obj-modal')">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-obj">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Transaction Modal -->
+<div class="modal-overlay" id="trans-modal">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <span class="modal-title" id="trans-modal-title">Nouvelle transaction</span>
+      <button class="modal-close" onclick="closeModal('trans-modal')">×</button>
+    </div>
+    <input type="hidden" id="trans-id">
+    <div id="trans-form" style="display:none"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Date *</label>
+        <input type="date" id="trans-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Référence facture</label>
+        <input type="text" id="trans-ref" placeholder="INV-2024-001">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Poste *</label>
+      <select id="trans-poste"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Tranche (auto)</label>
+        <input type="text" id="trans-tranche" readonly placeholder="Auto">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Catégorie (auto)</label>
+        <input type="text" id="trans-categorie" readonly placeholder="Auto">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Fournisseur</label>
+        <input type="text" id="trans-fournisseur" placeholder="Nom du fournisseur">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <input type="text" id="trans-description" placeholder="Détail de la dépense">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Montant Engagé (€)</label>
+        <input type="number" id="trans-engage" placeholder="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Montant Payé (€)</label>
+        <input type="number" id="trans-paye" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea id="trans-notes" placeholder="Informations complémentaires..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('trans-modal')">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-trans">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/tasks.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/contacts.js"></script>
+<script src="js/calculator.js"></script>
+<script src="js/objectives.js"></script>
+<script>
+let currentUser = null;
+const VIEWS = ['overview', 'objectives', 'tasks', 'calendar', 'contacts', 'mail', 'calculator'];
+
+document.addEventListener('DOMContentLoaded', () => {
+  currentUser = requireAuth('founder');
+  if (!currentUser) return;
+
+  // Sidebar user
+  const sidebar = document.getElementById('sidebar-user');
+  sidebar.innerHTML = `${renderAvatar(currentUser, 36)}<div><div class="user-name">${currentUser.name}</div><div class="user-role">${currentUser.role}</div></div>`;
+
+  // Nav clicks
+  VIEWS.forEach(v => {
+    const item = document.querySelector(`[data-view="${v}"]`);
+    if (item) item.addEventListener('click', () => switchView(v));
+  });
+
+  // Modal closes
+  ['task-modal','appt-modal','contact-modal','obj-modal','trans-modal'].forEach(setupModalClose);
+
+  // Button bindings
+  document.getElementById('btn-new-task').addEventListener('click', () => openNewTask(currentUser));
+  document.getElementById('btn-save-task').addEventListener('click', () => saveTask(currentUser));
+  document.getElementById('btn-new-appt').addEventListener('click', () => openNewAppt(currentUser));
+  document.getElementById('btn-save-appt').addEventListener('click', () => saveAppt(currentUser));
+  document.getElementById('btn-new-contact').addEventListener('click', () => openNewContact(currentUser));
+  document.getElementById('btn-save-contact').addEventListener('click', () => saveContact(currentUser));
+  document.getElementById('btn-save-obj').addEventListener('click', () => saveObjective(currentUser));
+  document.getElementById('btn-new-trans').addEventListener('click', () => openNewTransaction(currentUser));
+  document.getElementById('btn-save-trans').addEventListener('click', () => saveTransaction(currentUser));
+
+  // Cal search
+  document.getElementById('cal-search').addEventListener('input', e => renderCalendar(currentUser, e.target.value));
+
+  // Init all modules
+  initObjectives(currentUser);
+  initTasks(currentUser);
+  initCalendar(currentUser);
+  initContacts(currentUser);
+  initCalculator(currentUser);
+  renderOverview();
+});
+
+function switchView(v) {
+  VIEWS.forEach(id => {
+    document.querySelector(`[data-view="${id}"]`)?.classList.remove('active');
+    document.getElementById(`view-${id}`)?.classList.remove('active');
+  });
+  document.querySelector(`[data-view="${v}"]`)?.classList.add('active');
+  document.getElementById(`view-${v}`)?.classList.add('active');
+}
+
+function renderOverview() {
+  // Stats
+  const stats = getBudgetStats();
+  const fmt = n => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+  document.getElementById('ov-engage').textContent = fmt(stats.totalEngage);
+  document.getElementById('ov-paye').textContent = fmt(stats.totalPaye);
+  document.getElementById('ov-engage-pct').textContent = Math.round(stats.totalEngage / stats.totalBudget * 100) + '% du budget';
+
+  const tasks = DEMO_DATA.tasks;
+  const late = tasks.filter(t => t.status === 'en_retard').length;
+  document.getElementById('ov-late-tasks').textContent = late;
+  document.getElementById('ov-tasks-total').textContent = `Sur ${tasks.length} tâches`;
+  if (late > 0) { const b = document.getElementById('sidebar-late-badge'); b.textContent = late; b.style.display = 'flex'; }
+
+  const upcoming = DEMO_DATA.appointments.filter(a => new Date(a.date) >= new Date()).length;
+  document.getElementById('ov-upcoming-appts').textContent = upcoming;
+
+  // Prochains RDV
+  const nextAppts = [...DEMO_DATA.appointments].sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 4);
+  document.getElementById('ov-appts-list').innerHTML = nextAppts.map(a => {
+    const dt = new Date(a.date);
+    const assignee = getProfileById(a.assigned_to);
+    return `<div class="flex items-center gap-3 mb-3">
+      <div style="text-align:center;min-width:36px"><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--accent)">${dt.toLocaleDateString('fr-FR',{day:'2-digit'})}</div><div style="font-size:10px;color:var(--text3)">${dt.toLocaleDateString('fr-FR',{month:'short'}).toUpperCase()}</div></div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">${a.title}</div><div style="font-size:11px;color:var(--text3)">${assignee ? assignee.name : '—'} · ${dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div></div>
+    </div>`;
+  }).join('') || '<div class="text-dim text-sm">Aucun RDV à venir</div>';
+
+  // Tâches urgentes/retard
+  const urgentTasks = [...DEMO_DATA.tasks].filter(t => t.status !== 'termine').sort((a, b) => {
+    const order = { en_retard: 0, urgente: 1, en_cours: 2, a_faire: 3 };
+    return (order[a.status] ?? 4) - (order[b.status] ?? 4);
+  }).slice(0, 4);
+  document.getElementById('ov-tasks-list').innerHTML = urgentTasks.map(t => {
+    const assignee = getProfileById(t.assigned_to);
+    return `<div class="flex items-center gap-3 mb-3">
+      <span class="badge badge-${t.status}" style="flex-shrink:0">${formatStatus(t.status)}</span>
+      <div style="flex:1;overflow:hidden"><div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.title}</div><div style="font-size:11px;color:var(--text3)">${assignee ? assignee.name : '—'}</div></div>
+    </div>`;
+  }).join('') || '<div class="text-dim text-sm">Aucune tâche urgente</div>';
+
+  // Objectifs
+  document.getElementById('ov-objectives-list').innerHTML = DEMO_DATA.objectives.map(o => `
+    <div class="flex items-center gap-3 mb-3">
+      <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px">${o.title}</div><div class="progress-bar" style="height:5px"><div class="progress-fill" style="width:${o.progress}%"></div></div></div>
+      <span style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent);min-width:36px;text-align:right">${o.progress}%</span>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>

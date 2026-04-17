@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solaire — Commercial Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-text">☀️ SOLAIRE</div>
+      <div class="logo-sub">Accès Commercial</div>
+    </div>
+    <div class="sidebar-user" id="sidebar-user"></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Vue d'ensemble</div>
+      <div class="nav-item active" data-view="overview"><span class="nav-icon">📊</span> Mon dashboard</div>
+
+      <div class="nav-section-label">Opérations</div>
+      <div class="nav-item" data-view="tasks"><span class="nav-icon">✅</span> Mes tâches <span class="nav-badge" id="sidebar-late-badge" style="display:none">0</span></div>
+      <div class="nav-item" data-view="calendar"><span class="nav-icon">📅</span> Mes rendez-vous</div>
+
+      <div class="nav-section-label">Commercial</div>
+      <div class="nav-item" data-view="contacts"><span class="nav-icon">👥</span> Mes contacts</div>
+      <div class="nav-item" data-view="mail"><span class="nav-icon">✉️</span> Messagerie</div>
+
+      <div class="nav-section-label">Finance</div>
+      <div class="nav-item" data-view="calculator"><span class="nav-icon">💰</span> Budget</div>
+    </nav>
+    <div class="sidebar-footer">
+      <button onclick="authLogout()">🚪 Se déconnecter</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <div class="demo-banner">🧪 Mode Démo — Vous voyez uniquement vos données. Les modifications ne sont pas sauvegardées.</div>
+
+    <!-- ==================== OVERVIEW ==================== -->
+    <div id="view-overview" class="view active">
+      <div class="page-header">
+        <div>
+          <div class="page-title" id="overview-greeting">Bonjour 👋</div>
+          <div class="page-subtitle">Voici un résumé de votre activité</div>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-label">Mes tâches actives</div>
+            <div class="stat-value" id="ov-my-tasks">—</div>
+            <div class="stat-sub" id="ov-my-tasks-late">0 en retard</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Mes RDV à venir</div>
+            <div class="stat-value" id="ov-my-appts">—</div>
+            <div class="stat-sub">Dans les 30 jours</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Mes contacts chauds</div>
+            <div class="stat-value text-red" id="ov-my-chaud">—</div>
+            <div class="stat-sub" id="ov-total-contacts">Sur — contacts</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Relances urgentes</div>
+            <div class="stat-value text-orange" id="ov-followups">—</div>
+            <div class="stat-sub">Dans les 7 jours</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <!-- Prochains RDV -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">📅 Mes prochains RDV</span>
+              <button class="btn btn-ghost btn-sm" onclick="switchView('calendar')">Voir tout →</button>
+            </div>
+            <div id="ov-appts-list"></div>
+          </div>
+          <!-- Contacts à relancer -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">🔔 Relances à prévoir</span>
+              <button class="btn btn-ghost btn-sm" onclick="switchView('contacts')">Voir tout →</button>
+            </div>
+            <div id="ov-followups-list"></div>
+          </div>
+        </div>
+
+        <!-- Mes tâches en cours -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">✅ Mes tâches en cours</span>
+            <button class="btn btn-ghost btn-sm" onclick="switchView('tasks')">Voir tout →</button>
+          </div>
+          <div id="ov-tasks-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TASKS ==================== -->
+    <div id="view-tasks" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">✅ Mes Tâches</div>
+          <div class="page-subtitle"><span id="tasks-total-count">0</span> tâches · <span id="tasks-late-count" class="text-red">0</span> en retard</div>
+        </div>
+        <button class="btn btn-primary" id="btn-new-task">+ Nouvelle tâche</button>
+      </div>
+      <div class="page-body">
+        <div class="filters-bar">
+          <input type="text" id="task-search" placeholder="🔍 Rechercher..." style="max-width:220px">
+          <select id="task-filter-status">
+            <option value="">Tous les statuts</option>
+            <option value="a_faire">À faire</option>
+            <option value="en_cours">En cours</option>
+            <option value="en_retard">En retard</option>
+            <option value="termine">Terminé</option>
+          </select>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tâche</th>
+                  <th>Priorité</th>
+                  <th>Deadline</th>
+                  <th>Statut</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tasks-list"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== CALENDAR ==================== -->
+    <div id="view-calendar" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📅 Mes Rendez-vous</div>
+          <div class="page-subtitle"><span id="cal-total-count">0</span> rendez-vous</div>
+        </div>
+        <button class="btn btn-primary" id="btn-new-appt">+ Nouveau RDV</button>
+      </div>
+      <div class="page-body">
+        <div class="filters-bar">
+          <input type="text" id="cal-search" placeholder="🔍 Rechercher un RDV...">
+        </div>
+        <div class="calendar-grid" id="calendar-list"></div>
+      </div>
+    </div>
+
+    <!-- ==================== CONTACTS ==================== -->
+    <div id="view-contacts" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">👥 Mes Contacts</div>
+          <div class="page-subtitle"><span id="contacts-total">0</span> prospects · <span id="contacts-chaud" class="text-red">0</span> chauds</div>
+        </div>
+        <button class="btn btn-primary" id="btn-new-contact">+ Nouveau contact</button>
+      </div>
+      <div class="page-body">
+        <div class="filters-bar">
+          <input type="text" id="contact-search" placeholder="🔍 Rechercher...">
+          <select id="contact-filter-temp">
+            <option value="">Toutes les températures</option>
+            <option value="chaud">🔴 Chaud</option>
+            <option value="tiede">🟡 Tiède</option>
+            <option value="froid">🔵 Froid</option>
+          </select>
+          <!-- No assignee filter for commercial -->
+          <select id="contact-filter-assignee" style="display:none"></select>
+        </div>
+        <div class="contacts-grid" id="contacts-grid"></div>
+      </div>
+    </div>
+
+    <!-- ==================== MAIL ==================== -->
+    <div id="view-mail" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">✉️ Messagerie</div>
+          <div class="page-subtitle">Votre boîte mail professionnelle</div>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="mail-placeholder">
+          <div class="mail-icon">📬</div>
+          <h3>Intégration Microsoft 365</h3>
+          <p>Votre boîte mail sera connectée via Microsoft Exchange / Outlook pour accéder à vos emails directement depuis ce dashboard.</p>
+          <div class="mail-accounts" id="mail-account-display"></div>
+          <button class="btn btn-primary" style="margin-top:16px">Configurer Microsoft 365</button>
+          <p class="text-sm text-dim" style="margin-top:8px">Disponible en phase 2 — après connexion Supabase</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== CALCULATOR ==================== -->
+    <div id="view-calculator" class="view">
+      <div class="page-header">
+        <div>
+          <div class="page-title">💰 Budget — Vue Globale</div>
+          <div class="page-subtitle">Levée de fonds 1.15M€ · Lecture seule</div>
+        </div>
+      </div>
+      <div class="page-body">
+        <!-- Info banner -->
+        <div style="background:var(--blue-dim);border:1px solid rgba(59,130,246,0.2);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--blue)">
+          ℹ️ En tant que commercial, vous accédez au résumé budgétaire global. La gestion des transactions est réservée aux founders.
+        </div>
+
+        <!-- KPI row -->
+        <div class="stats-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="stat-card">
+            <div class="stat-label">Budget Total</div>
+            <div class="stat-value text-accent" id="calc-budget-total">1 150 000 €</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Engagé</div>
+            <div class="stat-value" id="calc-engage-total">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Payé</div>
+            <div class="stat-value text-green" id="calc-paye-total">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Reste à Engager</div>
+            <div class="stat-value text-blue" id="calc-reste-total">—</div>
+          </div>
+        </div>
+
+        <!-- Tranche cards -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+          <div class="card">
+            <div class="card-header"><span class="card-title">T1 — Produit & Conformité</span><span class="text-sm text-muted">M0→M4</span></div>
+            <div class="stat-label">Budget : <strong class="text-accent">350 000 €</strong></div>
+            <div class="progress-bar mt-2 mb-2"><div class="progress-fill" id="calc-bar-T1" style="width:0%"></div></div>
+            <div class="flex justify-between text-sm text-muted">
+              <span>Engagé: <strong id="calc-engage-T1">—</strong></span>
+              <span id="calc-pct-T1">0%</span>
+            </div>
+            <div class="flex justify-between text-sm text-muted mt-1">
+              <span>Payé: <strong class="text-green" id="calc-paye-T1">—</strong></span>
+              <span>Reste: <strong id="calc-reste-T1">—</strong></span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">T2 — Branding & Production</span><span class="text-sm text-muted">M4→M7</span></div>
+            <div class="stat-label">Budget : <strong class="text-accent">250 000 €</strong></div>
+            <div class="progress-bar mt-2 mb-2"><div class="progress-fill" id="calc-bar-T2" style="width:0%"></div></div>
+            <div class="flex justify-between text-sm text-muted">
+              <span>Engagé: <strong id="calc-engage-T2">—</strong></span>
+              <span id="calc-pct-T2">0%</span>
+            </div>
+            <div class="flex justify-between text-sm text-muted mt-1">
+              <span>Payé: <strong class="text-green" id="calc-paye-T2">—</strong></span>
+              <span>Reste: <strong id="calc-reste-T2">—</strong></span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">T3 — Déploiement & Marketing</span><span class="text-sm text-muted">M7→M12</span></div>
+            <div class="stat-label">Budget : <strong class="text-accent">550 000 €</strong></div>
+            <div class="progress-bar mt-2 mb-2"><div class="progress-fill" id="calc-bar-T3" style="width:0%"></div></div>
+            <div class="flex justify-between text-sm text-muted">
+              <span>Engagé: <strong id="calc-engage-T3">—</strong></span>
+              <span id="calc-pct-T3">0%</span>
+            </div>
+            <div class="flex justify-between text-sm text-muted mt-1">
+              <span>Payé: <strong class="text-green" id="calc-paye-T3">—</strong></span>
+              <span>Reste: <strong id="calc-reste-T3">—</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Task Modal (commercial: no assignee picker) -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="task-modal-title">Nouvelle tâche</span>
+      <button class="modal-close" onclick="closeModal('task-modal')">×</button>
+    </div>
+    <input type="hidden" id="task-id">
+    <div id="task-form" style="display:none"></div>
+    <div class="form-group">
+      <label class="form-label">Titre *</label>
+      <input type="text" id="task-title-input" placeholder="Titre de la tâche">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <textarea id="task-desc" placeholder="Détails..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Priorité</label>
+        <select id="task-priority">
+          <option value="basse">Basse</option>
+          <option value="normale" selected>Normale</option>
+          <option value="haute">Haute</option>
+          <option value="urgente">Urgente</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Deadline</label>
+        <input type="date" id="task-deadline">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Statut</label>
+      <select id="task-status-select">
+        <option value="a_faire">À faire</option>
+        <option value="en_cours">En cours</option>
+        <option value="termine">Terminé</option>
+      </select>
+    </div>
+    <!-- Hidden fields for compatibility with tasks.js -->
+    <select id="task-assignee" style="display:none"></select>
+    <select id="task-objective" style="display:none"></select>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('task-modal')">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-task">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Appointment Modal -->
+<div class="modal-overlay" id="appt-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="appt-modal-title">Nouveau rendez-vous</span>
+      <button class="modal-close" onclick="closeModal('appt-modal')">×</button>
+    </div>
+    <input type="hidden" id="appt-id">
+    <div id="appt-form" style="display:none"></div>
+    <div class="form-group">
+      <label class="form-label">Titre *</label>
+      <input type="text" id="appt-title-input" placeholder="Nom du rendez-vous">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date & heure *</label>
+      <input type="datetime-local" id="appt-date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Lieu</label>
+      <input type="text" id="appt-location" placeholder="Adresse ou lien Zoom">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea id="appt-notes-input" placeholder="Objectif du RDV, préparation..."></textarea>
+    </div>
+    <!-- Hidden assignee for compatibility -->
+    <select id="appt-assignee" style="display:none"></select>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('appt-modal')">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-appt">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Contact Modal -->
+<div class="modal-overlay" id="contact-modal">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <span class="modal-title" id="contact-modal-title">Nouveau contact</span>
+      <button class="modal-close" onclick="closeModal('contact-modal')">×</button>
+    </div>
+    <input type="hidden" id="contact-id">
+    <div id="contact-form" style="display:none"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nom *</label>
+        <input type="text" id="contact-name-input" placeholder="Prénom Nom">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Société</label>
+        <input type="text" id="contact-company-input" placeholder="Nom de la société">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Téléphone</label>
+        <input type="tel" id="contact-phone-input" placeholder="+971 50 ...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="contact-email-input" placeholder="contact@hotel.com">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Adresse</label>
+      <input type="text" id="contact-address-input" placeholder="Ville, Pays">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Température</label>
+        <select id="contact-temp-select">
+          <option value="froid">🔵 Froid</option>
+          <option value="tiede">🟡 Tiède</option>
+          <option value="chaud">🔴 Chaud</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date relance</label>
+        <input type="date" id="contact-followup-input">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea id="contact-notes-input" placeholder="Contexte, historique, prochaines étapes..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger btn-sm" id="btn-delete-contact" style="margin-right:auto;display:none">Supprimer</button>
+      <button class="btn btn-ghost" onclick="closeModal('contact-modal')">Annuler</button>
+      <button class="btn btn-primary" id="btn-save-contact">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/supabase.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/tasks.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/contacts.js"></script>
+<script src="js/calculator.js"></script>
+<script>
+let currentUser = null;
+const VIEWS = ['overview', 'tasks', 'calendar', 'contacts', 'mail', 'calculator'];
+
+document.addEventListener('DOMContentLoaded', () => {
+  currentUser = requireAuth('commercial');
+  if (!currentUser) return;
+
+  // Sidebar user
+  document.getElementById('sidebar-user').innerHTML = `${renderAvatar(currentUser, 36)}<div><div class="user-name">${currentUser.name}</div><div class="user-role">${currentUser.role}</div></div>`;
+
+  // Greeting
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir';
+  document.getElementById('overview-greeting').textContent = `${greet}, ${currentUser.name} 👋`;
+
+  // Mail account
+  document.getElementById('mail-account-display').innerHTML = `<div class="mail-account-pill">👤 ${currentUser.email}</div>`;
+
+  // Nav clicks
+  VIEWS.forEach(v => {
+    const item = document.querySelector(`[data-view="${v}"]`);
+    if (item) item.addEventListener('click', () => switchView(v));
+  });
+
+  // Modal closes
+  ['task-modal','appt-modal','contact-modal'].forEach(setupModalClose);
+
+  // Button bindings
+  document.getElementById('btn-new-task').addEventListener('click', () => openNewTaskCommercial());
+  document.getElementById('btn-save-task').addEventListener('click', () => saveTask(currentUser));
+  document.getElementById('btn-new-appt').addEventListener('click', () => openNewApptCommercial());
+  document.getElementById('btn-save-appt').addEventListener('click', () => saveApptCommercial());
+  document.getElementById('btn-new-contact').addEventListener('click', () => openNewContact(currentUser));
+  document.getElementById('btn-save-contact').addEventListener('click', () => saveContact(currentUser));
+
+  document.getElementById('cal-search').addEventListener('input', e => renderCalendar(currentUser, e.target.value));
+
+  // Init modules — filtered to current user
+  initTasks(currentUser);
+  initCalendar(currentUser);
+  initContacts(currentUser);
+  initCalculator(currentUser);
+  renderOverviewCommercial();
+});
+
+function switchView(v) {
+  VIEWS.forEach(id => {
+    document.querySelector(`[data-view="${id}"]`)?.classList.remove('active');
+    document.getElementById(`view-${id}`)?.classList.remove('active');
+  });
+  document.querySelector(`[data-view="${v}"]`)?.classList.add('active');
+  document.getElementById(`view-${v}`)?.classList.add('active');
+}
+
+// Commercial-specific: new task auto-assigns to self
+function openNewTaskCommercial() {
+  openNewTask(currentUser);
+  // Pre-select current user in hidden assignee field
+  const assigneeEl = document.getElementById('task-assignee');
+  if (assigneeEl) {
+    const opt = document.createElement('option');
+    opt.value = currentUser.id; opt.textContent = currentUser.name; opt.selected = true;
+    assigneeEl.innerHTML = '';
+    assigneeEl.appendChild(opt);
+  }
+}
+
+// Commercial-specific: new appt auto-assigns to self
+function openNewApptCommercial() {
+  openNewAppt(currentUser);
+  const assigneeEl = document.getElementById('appt-assignee');
+  if (assigneeEl) {
+    const opt = document.createElement('option');
+    opt.value = currentUser.id; opt.textContent = currentUser.name; opt.selected = true;
+    assigneeEl.innerHTML = '';
+    assigneeEl.appendChild(opt);
+  }
+}
+
+function saveApptCommercial() {
+  const assigneeEl = document.getElementById('appt-assignee');
+  if (assigneeEl && !assigneeEl.value) {
+    const opt = document.createElement('option');
+    opt.value = currentUser.id; opt.selected = true;
+    assigneeEl.innerHTML = '';
+    assigneeEl.appendChild(opt);
+  }
+  saveAppt(currentUser);
+}
+
+function renderOverviewCommercial() {
+  const myTasks = DEMO_DATA.tasks.filter(t => t.assigned_to === currentUser.id || t.created_by === currentUser.id);
+  const myAppts = DEMO_DATA.appointments.filter(a => a.assigned_to === currentUser.id || a.created_by === currentUser.id);
+  const myContacts = DEMO_DATA.contacts.filter(c => c.created_by === currentUser.id);
+
+  const lateTasks = myTasks.filter(t => t.status === 'en_retard').length;
+  const upcomingAppts = myAppts.filter(a => new Date(a.date) >= new Date()).length;
+  const chaudContacts = myContacts.filter(c => c.temperature === 'chaud').length;
+
+  const today = new Date();
+  const followupsSoon = myContacts.filter(c => {
+    if (!c.next_followup) return false;
+    const diff = new Date(c.next_followup) - today;
+    return diff >= 0 && diff <= 1000 * 60 * 60 * 24 * 7;
+  }).length;
+
+  document.getElementById('ov-my-tasks').textContent = myTasks.filter(t => t.status !== 'termine').length;
+  document.getElementById('ov-my-tasks-late').textContent = `${lateTasks} en retard`;
+  if (lateTasks > 0) document.getElementById('ov-my-tasks-late').classList.add('text-red');
+  document.getElementById('ov-my-appts').textContent = upcomingAppts;
+  document.getElementById('ov-my-chaud').textContent = chaudContacts;
+  document.getElementById('ov-total-contacts').textContent = `Sur ${myContacts.length} contacts`;
+  document.getElementById('ov-followups').textContent = followupsSoon;
+
+  if (lateTasks > 0) {
+    const b = document.getElementById('sidebar-late-badge');
+    b.textContent = lateTasks; b.style.display = 'flex';
+  }
+
+  // Prochains RDV
+  const nextAppts = [...myAppts].filter(a => new Date(a.date) >= today).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 4);
+  document.getElementById('ov-appts-list').innerHTML = nextAppts.map(a => {
+    const dt = new Date(a.date);
+    return `<div class="flex items-center gap-3 mb-3">
+      <div style="text-align:center;min-width:36px"><div style="font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--accent)">${dt.toLocaleDateString('fr-FR',{day:'2-digit'})}</div><div style="font-size:10px;color:var(--text3)">${dt.toLocaleDateString('fr-FR',{month:'short'}).toUpperCase()}</div></div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">${a.title}</div><div style="font-size:11px;color:var(--text3)">${a.location || '—'} · ${dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div></div>
+    </div>`;
+  }).join('') || '<div class="text-dim text-sm">Aucun RDV à venir</div>';
+
+  // Relances
+  const relances = [...myContacts].filter(c => c.next_followup).sort((a, b) => new Date(a.next_followup) - new Date(b.next_followup)).slice(0, 4);
+  document.getElementById('ov-followups-list').innerHTML = relances.map(c => {
+    const date = new Date(c.next_followup);
+    const isSoon = (date - today) < 1000 * 60 * 60 * 24 * 7;
+    return `<div class="flex items-center gap-3 mb-3 cursor-pointer" onclick="switchView('contacts')">
+      <span class="badge badge-${c.temperature}" style="flex-shrink:0">${c.temperature === 'chaud' ? '🔴' : c.temperature === 'tiede' ? '🟡' : '🔵'}</span>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">${c.name}</div><div style="font-size:11px;color:${isSoon ? 'var(--orange)' : 'var(--text3)'}">${c.company || '—'} · 🔔 ${date.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})}</div></div>
+    </div>`;
+  }).join('') || '<div class="text-dim text-sm">Aucune relance prévue</div>';
+
+  // Mes tâches actives
+  const activeTasks = myTasks.filter(t => t.status !== 'termine').slice(0, 4);
+  document.getElementById('ov-tasks-list').innerHTML = activeTasks.map(t => `
+    <div class="flex items-center gap-3 mb-3">
+      <span class="badge badge-${t.status}" style="flex-shrink:0">${formatStatus(t.status)}</span>
+      <div style="flex:1;overflow:hidden"><div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.title}</div><div style="font-size:11px;color:var(--text3)">Deadline: ${t.deadline ? new Date(t.deadline).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}) : '—'}</div></div>
+      <span class="badge badge-${t.priority}" style="flex-shrink:0">${formatPriority(t.priority)}</span>
+    </div>`).join('') || '<div class="text-dim text-sm">Aucune tâche active</div>';
+}
+</script>
+</body>
+</html>
