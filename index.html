@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Solaire — Connexion</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">☀️</div>
+      <div>
+        <div class="login-logo-text">SOLAIRE</div>
+        <div class="login-logo-sub">Dashboard opérationnel</div>
+      </div>
+    </div>
+    <div class="login-field">
+      <div class="login-label">Email</div>
+      <input id="email" class="input" type="email" placeholder="email@solaire.com" />
+    </div>
+    <div class="login-field">
+      <div class="login-label">Mot de passe</div>
+      <input id="password" class="input" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()" />
+    </div>
+    <button class="btn-primary w-full" onclick="login()">Connexion</button>
+    <div id="login-error" class="login-error"></div>
+    <div class="login-hint">
+      <strong>Comptes démo :</strong><br />
+      Founders : sane / matheo / clement / hugo @solaire.com<br />
+      Commerciaux : lucas / sarah @solaire.com<br />
+      Mot de passe : <strong>demo1234</strong>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEMO_LOGINS = {
+  'sane@solaire.com':    { password:'demo1234', role:'founder',    name:'Sane',    avatar:'SA' },
+  'matheo@solaire.com':  { password:'demo1234', role:'founder',    name:'Mathéo',  avatar:'MA' },
+  'clement@solaire.com': { password:'demo1234', role:'founder',    name:'Clément', avatar:'CL' },
+  'hugo@solaire.com':    { password:'demo1234', role:'founder',    name:'Hugo',    avatar:'HU' },
+  'lucas@solaire.com':   { password:'demo1234', role:'commercial', name:'Lucas',   avatar:'LU' },
+  'sarah@solaire.com':   { password:'demo1234', role:'commercial', name:'Sarah',   avatar:'SA' },
+};
+// already logged in?
+const u = JSON.parse(sessionStorage.getItem('solaire_user') || 'null');
+if (u) window.location.href = u.role === 'founder' ? 'dashboard-founder.html' : 'dashboard-commercial.html';
+
+function login() {
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const password = document.getElementById('password').value;
+  const user = DEMO_LOGINS[email];
+  if (!user || user.password !== password) {
+    document.getElementById('login-error').textContent = 'Email ou mot de passe incorrect.';
+    return;
+  }
+  sessionStorage.setItem('solaire_user', JSON.stringify({ email, ...user }));
+  window.location.href = user.role === 'founder' ? 'dashboard-founder.html' : 'dashboard-commercial.html';
+}
+
+// theme persistence
+const theme = localStorage.getItem('solaire_theme') || 'dark';
+if (theme === 'light') document.body.classList.add('light');
+</script>
+</body>
+</html>

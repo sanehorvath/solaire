@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Solaire — Founder</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/dashboard.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<div class="dashboard">
+  <!-- ── SIDEBAR ─────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">☀️</div>
+      <div>
+        <div class="sidebar-logo-text">Solaire</div>
+        <div class="sidebar-logo-role">Founder</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Principal</div>
+      <div class="nav-item active" data-view="overview"    onclick="switchView('overview')">   <span class="nav-icon">📊</span> Dashboard</div>
+      <div class="nav-item"        data-view="objectives"  onclick="switchView('objectives')"> <span class="nav-icon">🎯</span> Objectifs</div>
+      <div class="nav-item"        data-view="tasks"       onclick="switchView('tasks')">      <span class="nav-icon">✅</span> Tâches</div>
+      <div class="nav-item"        data-view="calendar"    onclick="switchView('calendar')">   <span class="nav-icon">📅</span> Calendrier</div>
+
+      <div class="nav-group-label">CRM</div>
+      <div class="nav-item"        data-view="clients"     onclick="switchView('clients')">    <span class="nav-icon">🤝</span> Clients</div>
+      <div class="nav-item"        data-view="suppliers"   onclick="switchView('suppliers')">  <span class="nav-icon">🏭</span> Fournisseurs</div>
+
+      <div class="nav-group-label">Finance</div>
+      <div class="nav-item"        data-view="invoices"    onclick="switchView('invoices')">   <span class="nav-icon">🧾</span> Facturation</div>
+      <div class="nav-item"        data-view="budget"      onclick="switchView('budget')">     <span class="nav-icon">💰</span> Budget</div>
+      <div class="nav-item"        data-view="calculator"  onclick="switchView('calculator')"> <span class="nav-icon">🔢</span> Calculateur</div>
+
+      <div class="nav-group-label">Communication</div>
+      <div class="nav-item"        data-view="messages"    onclick="switchView('messages')">   <span class="nav-icon">💬</span> Messagerie</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="user-avatar" id="user-avatar">SA</div>
+        <div>
+          <div class="user-name" id="user-name">Sane</div>
+          <div class="user-role">Founder</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ───────────────────────────────────────── -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-actions">
+        <button class="theme-toggle" onclick="toggleTheme()">☀️</button>
+        <button class="logout-btn" onclick="logout()">Déconnexion</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- OVERVIEW -->
+      <div class="view active" id="view-overview">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Factures en cours</div>
+            <div class="kpi-value kpi-blue" id="ov-encours">–</div>
+            <div class="kpi-sub">montant engagé</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Factures en retard</div>
+            <div class="kpi-value kpi-red" id="ov-retard">–</div>
+            <div class="kpi-sub">à régulariser</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Montant payé</div>
+            <div class="kpi-value kpi-green" id="ov-paye">–</div>
+            <div class="kpi-sub">cumul factures payées</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Budget disponible</div>
+            <div class="kpi-value kpi-amber" id="ov-budget">–</div>
+            <div class="kpi-sub">budget T1 restant</div>
+          </div>
+        </div>
+        <div class="overview-grid">
+          <div class="card">
+            <div class="card-title">Tâches récentes</div>
+            <div id="ov-tasks"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Prochains RDV</div>
+            <div id="ov-rdv"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OBJECTIVES -->
+      <div class="view" id="view-objectives"></div>
+
+      <!-- TASKS -->
+      <div class="view" id="view-tasks"></div>
+
+      <!-- CALENDAR -->
+      <div class="view" id="view-calendar"></div>
+
+      <!-- CLIENTS -->
+      <div class="view" id="view-clients"></div>
+
+      <!-- SUPPLIERS -->
+      <div class="view" id="view-suppliers"></div>
+
+      <!-- INVOICES -->
+      <div class="view" id="view-invoices"></div>
+
+      <!-- BUDGET -->
+      <div class="view" id="view-budget"></div>
+
+      <!-- CALCULATOR -->
+      <div class="view" id="view-calculator"></div>
+
+      <!-- MESSAGES -->
+      <div class="view" id="view-messages"></div>
+
+    </div>
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/modules.js"></script>
+<script>
+const VIEW_LABELS = {
+  overview:'Dashboard', objectives:'Objectifs', tasks:'Tâches',
+  calendar:'Calendrier', clients:'Clients', suppliers:'Fournisseurs',
+  invoices:'Facturation', budget:'Budget', calculator:'Calculateur', messages:'Messagerie'
+};
+let _currentView = 'overview';
+
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelector(`[data-view="${name}"]`).classList.add('active');
+  document.getElementById('topbar-title').textContent = VIEW_LABELS[name];
+  _currentView = name;
+
+  const u = getCurrentUser();
+  if (name === 'objectives')  initObjectives();
+  if (name === 'tasks')       initTasks(u.email, u.role);
+  if (name === 'calendar')    initCalendar(u.email, u.role);
+  if (name === 'clients')     initClients();
+  if (name === 'suppliers')   initSuppliers();
+  if (name === 'invoices')    initInvoices(u.role);
+  if (name === 'budget')      initBudget();
+  if (name === 'calculator')  initCalculator();
+  if (name === 'messages')    initMessages();
+}
+
+function logout() {
+  sessionStorage.removeItem('solaire_user');
+  window.location.href = 'index.html';
+}
+
+function renderOverview() {
+  const totals = { 'en cours':0, 'en retard':0, 'payée':0 };
+  DEMO_INVOICES.filter(i=>!i.archived).forEach(i => { if(totals[i.statut]!==undefined) totals[i.statut]+=i.montant; });
+  const eng = getBudgetFromInvoices();
+  const T1postes = BUDGET_POSTES.filter(p=>p.tranche==='T1');
+  const T1budget = T1postes.reduce((s,p)=>s+p.budget,0);
+  const T1engage = T1postes.reduce((s,p)=>s+(eng[p.id]?.engage||0),0);
+
+  document.getElementById('ov-encours').textContent = fmt(totals['en cours']);
+  document.getElementById('ov-retard').textContent  = fmt(totals['en retard']);
+  document.getElementById('ov-paye').textContent    = fmt(totals['payée']);
+  document.getElementById('ov-budget').textContent  = fmt(T1budget - T1engage);
+
+  const tasks = DEMO_TASKS.slice(0,4);
+  document.getElementById('ov-tasks').innerHTML = tasks.map(t=>`
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span>${t.titre}</span>
+      <span class="badge-status status-${t.statut==='complété'?'actif':t.statut==='en cours'?'en-approche':'à-qualifier'}">${t.statut}</span>
+    </div>
+  `).join('');
+
+  const rdvs = DEMO_APPOINTMENTS.slice(0,3);
+  document.getElementById('ov-rdv').innerHTML = rdvs.map(a=>`
+    <div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span style="color:var(--accent);min-width:80px">${fmtDate(a.date)}</span>
+      <span>${a.titre}</span>
+    </div>
+  `).join('');
+}
+
+// ── Init ────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const u = requireAuth('founder');
+  if (!u) return;
+  document.getElementById('user-name').textContent = u.name;
+  document.getElementById('user-avatar').textContent = u.avatar;
+  initTheme();
+  renderOverview();
+});
+</script>
+</body>
+</html>
