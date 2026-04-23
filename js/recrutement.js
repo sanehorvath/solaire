@@ -21,139 +21,103 @@ let REC_SEARCH       = '';
 let REC_DETAIL_ID    = null;
 let recSupa          = null;
 
-// ── Init Supabase ─────────────────────────────────────────
 try {
   recSupa = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 } catch(e) { console.error('Supabase init error:', e); }
 
-// ── Load from Supabase ────────────────────────────────────
+// ── Load ──────────────────────────────────────────────────
 async function loadCandidatesFromSupabase() {
   if (!recSupa) return;
   const el = document.getElementById('view-recrutement');
-  if (el) el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2)">⏳ Chargement des candidatures...</div>';
-
-  const { data, error } = await recSupa
-    .from('candidates')
-    .select('*')
-    .order('created_at', { ascending: false });
-
+  if (el) el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2)">⏳ Chargement...</div>';
+  const { data, error } = await recSupa.from('candidates').select('*').order('created_at',{ascending:false});
   if (error) {
-    console.error('Supabase load error:', error);
-    if (el) el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--red)">❌ Erreur de chargement : ${error.message}</div>`;
+    if (el) el.innerHTML = `<div style="padding:40px;text-align:center;color:var(--red)">❌ Erreur : ${error.message}</div>`;
     return;
   }
-
-  REC_CANDIDATES = (data || []).map(normCandidate);
+  REC_CANDIDATES = (data||[]).map(normCandidate);
   renderRecruitment();
 }
 
 async function saveCandidate(c) {
   if (!recSupa) return;
   const { error } = await recSupa.from('candidates').upsert([{
-    id:             c.id,
-    nom:            c.nom,
-    whatsapp:       c.whatsapp,
-    email:          c.email,
-    source:         c.source,
-    zones:          c.zones,
-    reseau:         c.reseau,
-    disponibilite:  c.disponibilite,
-    commission:     c.commission,
-    message:        c.message,
-    etape:          c.etape,
-    statut:         c.statut,
-    file_url:       c.file_url,
-    file_name:      c.file_name,
-    notes_internes: c.notes_internes,
-    criteres:       c.criteres,
-    call_date:      c.call_date,
-    call_canal:     c.call_canal,
-    call_notes:     c.call_notes,
-    score:          c.score,
-    decision:       c.decision,
-    contacts_cites: c.contacts_cites,
+    id:c.id, nom:c.nom, whatsapp:c.whatsapp, email:c.email,
+    source:c.source, zones:c.zones, reseau:c.reseau,
+    disponibilite:c.disponibilite, commission:c.commission,
+    message:c.message, etape:c.etape, statut:c.statut,
+    file_url:c.file_url, file_name:c.file_name,
+    notes_internes:c.notes_internes, criteres:c.criteres,
+    call_date:c.call_date, call_canal:c.call_canal,
+    call_notes:c.call_notes, score:c.score,
+    decision:c.decision, contacts_cites:c.contacts_cites,
+    assigned_to:c.assigned_to,
   }]);
   if (error) console.warn('Save error:', error);
 }
 
 function normCandidate(d) {
   return {
-    id:             d.id,
-    nom:            d.nom            || '–',
-    whatsapp:       d.whatsapp       || '–',
-    email:          d.email          || '–',
-    source:         d.source         || '–',
-    zones:          d.zones          || [],
-    reseau:         d.reseau         || null,
-    disponibilite:  d.disponibilite  || null,
-    commission:     d.commission     || null,
-    message:        d.message        || '',
-    etape:          d.etape          || 'lead',
-    statut:         d.statut         || 'actif',
-    file_url:       d.file_url       || null,
-    file_name:      d.file_name      || null,
-    created_at:     d.created_at,
-    notes_internes: d.notes_internes || [],
-    score:          d.score          || null,
-    criteres:       d.criteres       || { zone:null, reseau:null, commission:null, dispo:null, background:null },
-    call_date:      d.call_date      || null,
-    call_canal:     d.call_canal     || null,
-    call_notes:     d.call_notes     || '',
-    decision:       d.decision       || null,
-    contacts_cites: d.contacts_cites || [],
+    id:d.id, nom:d.nom||'–', whatsapp:d.whatsapp||'–', email:d.email||'–',
+    source:d.source||'–', zones:d.zones||[], reseau:d.reseau||null,
+    disponibilite:d.disponibilite||null, commission:d.commission||null,
+    message:d.message||'', etape:d.etape||'lead', statut:d.statut||'actif',
+    file_url:d.file_url||null, file_name:d.file_name||null,
+    created_at:d.created_at, notes_internes:d.notes_internes||[],
+    score:d.score||null,
+    criteres:d.criteres||{zone:null,reseau:null,commission:null,dispo:null,background:null},
+    call_date:d.call_date||null, call_canal:d.call_canal||null,
+    call_notes:d.call_notes||'', decision:d.decision||null,
+    contacts_cites:d.contacts_cites||[],
+    assigned_to:d.assigned_to||null,
   };
 }
 
 // ── Utils ─────────────────────────────────────────────────
 function hoursAgo(iso) {
   if (!iso) return 0;
-  return Math.round((Date.now() - new Date(iso).getTime()) / 3600000);
+  return Math.round((Date.now()-new Date(iso).getTime())/3600000);
 }
 function isBlocked(c) {
-  const etape = ETAPES.find(e => e.id === c.etape);
-  if (!etape || !etape.alert_h) return false;
-  return hoursAgo(c.created_at) > etape.alert_h && c.statut === 'actif';
+  const e=ETAPES.find(x=>x.id===c.etape);
+  if(!e||!e.alert_h) return false;
+  return hoursAgo(c.created_at)>e.alert_h && c.statut==='actif';
 }
 function fmtAgo(iso) {
-  const h = hoursAgo(iso);
-  if (h < 1) return "À l'instant";
-  if (h < 24) return `Il y a ${h}h`;
+  const h=hoursAgo(iso);
+  if(h<1) return "À l'instant";
+  if(h<24) return `Il y a ${h}h`;
   return `Il y a ${Math.floor(h/24)}j`;
 }
 function fmtRecDate(iso) {
-  if (!iso) return '–';
-  return new Date(iso).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+  if(!iso) return '–';
+  return new Date(iso).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'});
 }
 
-// ── Main render ───────────────────────────────────────────
+// ── Render list ───────────────────────────────────────────
 function renderRecruitment() {
-  const el = document.getElementById('view-recrutement');
-  if (!el) return;
+  const el=document.getElementById('view-recrutement'); if(!el) return;
+  const active=REC_CANDIDATES.filter(c=>c.statut==='actif');
+  const blocked=REC_CANDIDATES.filter(c=>isBlocked(c)).length;
+  const byEtape={};
+  ETAPE_IDS.forEach(e=>{byEtape[e]=active.filter(c=>c.etape===e).length;});
 
-  const active = REC_CANDIDATES.filter(c => c.statut === 'actif');
-  const blocked = REC_CANDIDATES.filter(c => isBlocked(c)).length;
-  const byEtape = {};
-  ETAPE_IDS.forEach(e => { byEtape[e] = active.filter(c => c.etape === e).length; });
+  let items=[...REC_CANDIDATES];
+  if(REC_FILTER_ETAPE!=='all') items=items.filter(c=>c.etape===REC_FILTER_ETAPE);
+  if(REC_FILTER_ZONE!=='all')  items=items.filter(c=>(c.zones||[]).includes(REC_FILTER_ZONE));
+  if(REC_SEARCH){const s=REC_SEARCH.toLowerCase();items=items.filter(c=>c.nom.toLowerCase().includes(s)||c.email.toLowerCase().includes(s));}
 
-  let items = [...REC_CANDIDATES];
-  if (REC_FILTER_ETAPE !== 'all') items = items.filter(c => c.etape === REC_FILTER_ETAPE);
-  if (REC_FILTER_ZONE  !== 'all') items = items.filter(c => (c.zones||[]).includes(REC_FILTER_ZONE));
-  if (REC_SEARCH) {
-    const s = REC_SEARCH.toLowerCase();
-    items = items.filter(c => c.nom.toLowerCase().includes(s) || c.email.toLowerCase().includes(s));
-  }
-
-  el.innerHTML = `
+  el.innerHTML=`
     <div class="vh">
       <h2>Recrutement</h2>
       <div class="vhright">
         <button class="btn-sec" onclick="loadCandidatesFromSupabase()" style="font-size:12px">↻ Actualiser</button>
-        <span class="badge-info">${blocked > 0 ? `⚠️ ${blocked} bloqué${blocked>1?'s':''}` : '✅ Aucun blocage'}</span>
+        <span class="badge-info">${blocked>0?`⚠️ ${blocked} bloqué${blocked>1?'s':''}`:'✅ Aucun blocage'}</span>
       </div>
     </div>
 
     <div class="kpi-row kpi4 mb16">
-      <div class="kpi"><div class="kpi-l">Total candidats</div><div class="kpi-v kpi-blue">${REC_CANDIDATES.length}</div></div>
+      <div class="kpi"><div class="kpi-l">Total</div><div class="kpi-v kpi-blue">${REC_CANDIDATES.length}</div></div>
       <div class="kpi"><div class="kpi-l">Actifs</div><div class="kpi-v">${active.length}</div></div>
       <div class="kpi"><div class="kpi-l">En qualification</div><div class="kpi-v">${(byEtape['prequalif']||0)+(byEtape['call_plan']||0)+(byEtape['discovery']||0)}</div></div>
       <div class="kpi"><div class="kpi-l">Onboarding</div><div class="kpi-v kpi-green">${byEtape['onboarding']||0}</div></div>
@@ -162,9 +126,9 @@ function renderRecruitment() {
     <div class="card mb16">
       <div class="card-label">Pipeline</div>
       <div class="rec-funnel">
-        ${ETAPES.map(e => {
-          const n = active.filter(c => c.etape === e.id).length;
-          const pct = active.length ? Math.round(n/active.length*100) : 0;
+        ${ETAPES.map(e=>{
+          const n=active.filter(c=>c.etape===e.id).length;
+          const pct=active.length?Math.round(n/active.length*100):0;
           return `<div class="funnel-step ${REC_FILTER_ETAPE===e.id?'active':''}" onclick="recSetFilter('etape','${e.id}')">
             <div class="funnel-icon">${e.icon}</div>
             <div class="funnel-label">${e.label}</div>
@@ -183,10 +147,8 @@ function renderRecruitment() {
       </select>
       <select class="inp" onchange="recSetFilter('zone',this.value)" style="width:130px">
         <option value="all">Toutes zones</option>
-        <option value="Phuket">Phuket</option>
-        <option value="Samui">Samui</option>
-        <option value="Pattaya">Pattaya</option>
-        <option value="Bali">Bali</option>
+        <option value="Phuket">Phuket</option><option value="Samui">Samui</option>
+        <option value="Pattaya">Pattaya</option><option value="Bali">Bali</option>
       </select>
       ${REC_FILTER_ETAPE!=='all'||REC_FILTER_ZONE!=='all'||REC_SEARCH?`<button class="btn-sec" onclick="recClearFilters()">✕</button>`:''}
     </div>
@@ -194,12 +156,13 @@ function renderRecruitment() {
     <div class="card" style="padding:0">
       <table class="t-rec">
         <thead><tr>
-          <th>Candidat</th><th>Source</th><th>Zones</th><th>Étape</th><th>Reçu</th><th>Statut</th><th></th>
+          <th>Candidat</th><th>Source</th><th>Zones</th><th>Étape</th>
+          <th>Assigné à</th><th>Reçu</th><th>Statut</th><th></th>
         </tr></thead>
         <tbody>
-          ${items.length ? items.map(c => {
-            const etape = ETAPES.find(e => e.id === c.etape);
-            const bl = isBlocked(c);
+          ${items.length?items.map(c=>{
+            const etape=ETAPES.find(e=>e.id===c.etape);
+            const bl=isBlocked(c);
             return `<tr class="${bl?'row-alert':''}" onclick="openCandidateDetail('${c.id}')" style="cursor:pointer">
               <td>
                 <div class="rec-name">${c.nom}${bl?` <span title="Bloqué">⚠️</span>`:''}</div>
@@ -208,11 +171,16 @@ function renderRecruitment() {
               <td class="rec-source">${c.source||'–'}</td>
               <td><div class="rec-zones">${(c.zones||[]).join(', ')||'–'}</div></td>
               <td><span class="etape-badge" style="background:${etape?.color}22;color:${etape?.color}">${etape?.icon||''} ${etape?.label||c.etape}</span></td>
+              <td>
+                ${c.assigned_to
+                  ? `<span style="background:rgba(245,158,11,.15);color:var(--acc);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">👤 ${c.assigned_to}</span>`
+                  : `<span style="color:var(--text3);font-size:12px">Non assigné</span>`}
+              </td>
               <td class="rec-ago">${fmtAgo(c.created_at)}</td>
               <td><span class="bs bs-${c.statut==='actif'?'actif':c.statut==='no_go'?'à-contacter':'actif'}">${c.statut==='actif'?'Actif':c.statut==='no_go'?'No-go':'Onboarding'}</span></td>
               <td onclick="event.stopPropagation()"><button class="bxs bxs-g" onclick="openCandidateDetail('${c.id}')">Voir →</button></td>
             </tr>`;
-          }).join('') : `<tr><td colspan="7" class="empty">Aucune candidature reçue</td></tr>`}
+          }).join(''):`<tr><td colspan="8" class="empty">Aucune candidature reçue</td></tr>`}
         </tbody>
       </table>
     </div>
@@ -224,40 +192,41 @@ function renderRecruitment() {
     </div>
   `;
 
-  if (REC_DETAIL_ID) openCandidateDetail(REC_DETAIL_ID);
-  document.getElementById('mo-candidate')?.addEventListener('click', () => {
-    REC_DETAIL_ID = null;
+  if(REC_DETAIL_ID) openCandidateDetail(REC_DETAIL_ID);
+  document.getElementById('mo-candidate')?.addEventListener('click',()=>{
+    REC_DETAIL_ID=null;
     document.getElementById('mo-candidate')?.classList.remove('active');
   });
 }
 
-function recSearch(v) { REC_SEARCH = v; renderRecruitment(); }
-function recSetFilter(type, val) {
-  if (type==='etape') REC_FILTER_ETAPE = val;
-  if (type==='zone')  REC_FILTER_ZONE  = val;
+function recSearch(v){REC_SEARCH=v;renderRecruitment();}
+function recSetFilter(type,val){
+  if(type==='etape') REC_FILTER_ETAPE=val;
+  if(type==='zone')  REC_FILTER_ZONE=val;
   renderRecruitment();
 }
-function recClearFilters() { REC_FILTER_ETAPE='all'; REC_FILTER_ZONE='all'; REC_SEARCH=''; renderRecruitment(); }
+function recClearFilters(){REC_FILTER_ETAPE='all';REC_FILTER_ZONE='all';REC_SEARCH='';renderRecruitment();}
 
 // ── Detail modal ──────────────────────────────────────────
 function openCandidateDetail(id) {
-  REC_DETAIL_ID = id;
-  const c = REC_CANDIDATES.find(x => x.id === id);
-  if (!c) return;
-  const etape = ETAPES.find(e => e.id === c.etape);
-  const content = document.getElementById('mo-candidate-content');
-  if (!content) return;
+  REC_DETAIL_ID=id;
+  const c=REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
+  const etape=ETAPES.find(e=>e.id===c.etape);
+  const content=document.getElementById('mo-candidate-content'); if(!content) return;
   document.getElementById('mo-candidate')?.classList.add('active');
 
-  const criteresItems = [
-    { key:'zone',       label:'Zone match' },
-    { key:'reseau',     label:'Réseau ≥ 1 établissement' },
-    { key:'commission', label:'Accepte commission' },
-    { key:'dispo',      label:'Disponibilité ≥ 10h/sem' },
-    { key:'background', label:'Background pertinent' },
+  const u=getCurrentUser();
+  const currentUser=u?.name||'Équipe';
+
+  const criteresItems=[
+    {key:'zone',label:'Zone match'},
+    {key:'reseau',label:'Réseau ≥ 1 établissement'},
+    {key:'commission',label:'Accepte commission'},
+    {key:'dispo',label:'Disponibilité ≥ 10h/sem'},
+    {key:'background',label:'Background pertinent'},
   ];
 
-  content.innerHTML = `
+  content.innerHTML=`
     <div class="mh" style="position:sticky;top:0;background:var(--bg2);z-index:5">
       <div>
         <div style="font-size:17px;font-weight:700">${c.nom}</div>
@@ -267,13 +236,29 @@ function openCandidateDetail(id) {
     </div>
     <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
 
+      <!-- Statut + assignation -->
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="etape-badge" style="background:${etape?.color}22;color:${etape?.color}">${etape?.icon} ${etape?.label}</span>
         <span class="bs bs-${c.statut==='actif'?'actif':'à-contacter'}">${c.statut==='actif'?'Actif':c.statut==='no_go'?'No-go':'Onboarding'}</span>
-        ${c.score !== null ? `<span style="background:rgba(245,158,11,.15);color:var(--acc);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">Score : ${c.score}/20</span>` : ''}
+        ${c.score!==null?`<span style="background:rgba(245,158,11,.15);color:var(--acc);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">Score : ${c.score}/20</span>`:''}
         ${isBlocked(c)?`<span style="background:rgba(239,68,68,.12);color:var(--red);padding:4px 10px;border-radius:6px;font-size:12px">⚠️ Bloqué ${hoursAgo(c.created_at)}h</span>`:''}
       </div>
 
+      <!-- Prise en charge -->
+      <div class="card" style="padding:14px">
+        <div class="card-label">Prise en charge</div>
+        ${c.assigned_to
+          ? `<div style="display:flex;align-items:center;justify-content:space-between">
+               <span style="font-size:14px">👤 <strong>${c.assigned_to}</strong> gère ce dossier</span>
+               <button onclick="assignCandidate('${c.id}','${currentUser}')" class="bxs bxs-sec" style="font-size:11px">Reprendre</button>
+             </div>`
+          : `<div style="display:flex;align-items:center;justify-content:space-between">
+               <span style="font-size:13px;color:var(--text2)">Personne n'a encore pris ce dossier en charge</span>
+               <button onclick="assignCandidate('${c.id}','${currentUser}')" class="btn-primary" style="font-size:12px;padding:7px 14px">👤 Je prends en charge</button>
+             </div>`}
+      </div>
+
+      <!-- Infos -->
       <div class="card" style="padding:14px">
         <div class="card-label">Informations</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
@@ -293,6 +278,7 @@ function openCandidateDetail(id) {
         <a href="${c.file_url}" target="_blank" rel="noopener" class="bxs bxs-g" style="text-decoration:none">Télécharger ↗</a>
       </div>`:''}
 
+      <!-- Pipeline -->
       <div class="card" style="padding:14px">
         <div class="card-label">Pipeline</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:${c.etape==='lead'||c.etape==='prequalif'?'12':'0'}px">
@@ -343,6 +329,7 @@ function openCandidateDetail(id) {
             <textarea class="inp" rows="4" onblur="updateContacts('${c.id}',this.value)" placeholder="Un établissement par ligne">${(c.contacts_cites||[]).join('\n')}</textarea>`:''}
         </div>`:''}
 
+      <!-- Notes internes -->
       <div class="card" style="padding:14px">
         <div class="card-label">Notes internes</div>
         ${(c.notes_internes||[]).map(n=>`
@@ -361,63 +348,70 @@ function openCandidateDetail(id) {
   `;
 }
 
-function closeCandidateDetail() {
-  REC_DETAIL_ID = null;
+function closeCandidateDetail(){
+  REC_DETAIL_ID=null;
   document.getElementById('mo-candidate')?.classList.remove('active');
 }
 
 // ── Actions ───────────────────────────────────────────────
-function moveCandidate(id, etape) {
-  const c = REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
-  c.etape = etape;
-  if (etape==='onboarding') c.statut='actif';
+async function assignCandidate(id, name) {
+  const c=REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
+  c.assigned_to=name;
+  await saveCandidate(c);
+  openCandidateDetail(id);
+  renderRecruitment();
+  showToast(`👤 Dossier assigné à ${name}`);
+}
+
+function moveCandidate(id,etape){
+  const c=REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
+  c.etape=etape;
+  if(etape==='onboarding') c.statut='actif';
   saveCandidate(c);
   openCandidateDetail(id);
   renderRecruitment();
   showToast('Déplacé → '+ETAPES.find(e=>e.id===etape)?.label);
 }
-function setCritere(id, key, val) {
-  const c = REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
-  c.criteres = { ...c.criteres, [key]: val };
+function setCritere(id,key,val){
+  const c=REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
+  c.criteres={...c.criteres,[key]:val};
   saveCandidate(c);
   openCandidateDetail(id);
 }
-function updateCallField(id, field, val) {
-  const c = REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
-  c[field] = val;
+function updateCallField(id,field,val){
+  const c=REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
+  c[field]=val; saveCandidate(c);
+}
+function updateContacts(id,text){
+  const c=REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
+  c.contacts_cites=text.split('\n').map(s=>s.trim()).filter(Boolean);
   saveCandidate(c);
 }
-function updateContacts(id, text) {
-  const c = REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
-  c.contacts_cites = text.split('\n').map(s=>s.trim()).filter(Boolean);
-  saveCandidate(c);
-}
-function setDecision(id, val) {
-  const c = REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
-  c.decision = val||null;
-  if (val==='go')    { c.etape='onboarding'; c.statut='actif'; }
-  if (val==='no_go') { c.statut='no_go'; }
+function setDecision(id,val){
+  const c=REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
+  c.decision=val||null;
+  if(val==='go'){c.etape='onboarding';c.statut='actif';}
+  if(val==='no_go'){c.statut='no_go';}
   saveCandidate(c);
   openCandidateDetail(id);
   renderRecruitment();
   if(val) showToast(val==='go'?'✅ Go — Onboarding':val==='no_go'?'❌ No-go':'🔄 Second call');
 }
-function setNoGo(id) {
-  const c = REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
+function setNoGo(id){
+  const c=REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
   if(!confirm(`No-go pour ${c.nom} ?`)) return;
   c.statut='no_go'; c.decision='no_go';
-  saveCandidate(c);
-  closeCandidateDetail();
+  saveCandidate(c); closeCandidateDetail();
   renderRecruitment();
   showToast('Candidat sorti du pipeline');
 }
-function addNote(id) {
-  const c = REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
-  const el = document.getElementById('note-input-'+id);
-  const text = el?.value.trim();
-  if (!text) return showToast('Saisissez une note','warn');
-  const u = getCurrentUser();
-  c.notes_internes.push({ text, date:new Date().toISOString(), author:u?.name||'Équipe' });
+function addNote(id){
+  const c=REC_CANDIDATES.find(x=>x.id===id); if(!c) return;
+  const el=document.getElementById('note-input-'+id);
+  const text=el?.value.trim();
+  if(!text) return showToast('Saisissez une note','warn');
+  const u=getCurrentUser();
+  c.notes_internes.push({text,date:new Date().toISOString(),author:u?.name||'Équipe'});
   saveCandidate(c);
   openCandidateDetail(id);
   showToast('Note ajoutée');
