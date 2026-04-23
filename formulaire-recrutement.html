@@ -89,6 +89,11 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.55; }
 .field-error.show { display: block; }
 input.invalid, select.invalid { border-color: var(--red); }
 
+/* Zone buttons */
+.zone-btn { width:100%; background:var(--bg3); border:1px solid var(--bord); border-radius:8px; color:var(--text2); padding:12px 16px; font-size:14px; font-family:"DM Sans",sans-serif; text-align:left; cursor:pointer; transition:all .15s; }
+.zone-btn:hover { border-color:rgba(212,168,83,.5); color:var(--text); background:rgba(212,168,83,.05); }
+.zone-btn.selected { border-color:var(--gold); background:rgba(212,168,83,.15); color:var(--gold); font-weight:600; }
+
 /* Submit */
 .submit-btn { width: 100%; background: var(--gold); color: #0a0c10; border: none; border-radius: 8px; padding: 15px 24px; font-size: 15px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; margin-top: 8px; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .submit-btn:hover { background: var(--gold2); transform: translateY(-1px); }
@@ -188,13 +193,13 @@ input.invalid, select.invalid { border-color: var(--red); }
     <div class="section-sep"><div class="section-sep-line"></div><div class="section-sep-label">Zone & Profil</div><div class="section-sep-line"></div></div>
 
     <div class="field">
-      <label>Zone(s) cible(s) <span class="req">*</span></label>
+      <div id="zones-group" style="display:flex;flex-direction:column;gap:8px;">
       <div class="zone-list" id="zones-group">
-        <label><input type="checkbox" id="z-phuket" value="Phuket"/><span>📍 Phuket</span></label>
-        <label><input type="checkbox" id="z-samui" value="Samui"/><span>📍 Koh Samui</span></label>
-        <label><input type="checkbox" id="z-pattaya" value="Pattaya"/><span>📍 Pattaya</span></label>
-        <label><input type="checkbox" id="z-bali" value="Bali"/><span>📍 Bali</span></label>
-        <label><input type="checkbox" id="z-autre" value="Autre"/><span>📍 Autre zone</span></label>
+        <button type="button" class="zone-btn" data-zone="Phuket"  onclick="selectZone(this)">📍 Phuket</button>
+        <button type="button" class="zone-btn" data-zone="Samui"   onclick="selectZone(this)">📍 Koh Samui</button>
+        <button type="button" class="zone-btn" data-zone="Pattaya" onclick="selectZone(this)">📍 Pattaya</button>
+        <button type="button" class="zone-btn" data-zone="Bali"    onclick="selectZone(this)">📍 Bali</button>
+        <button type="button" class="zone-btn" data-zone="Autre"   onclick="selectZone(this)">📍 Autre zone</button>
       </div>
       <div class="field-error" id="err-zones">Sélectionnez au moins une zone</div>
     </div>
@@ -329,7 +334,7 @@ function validate() {
   const email    = document.getElementById('f-email').value.trim();
   const source   = document.getElementById('f-source').value;
   const message  = document.getElementById('f-message').value.trim();
-  const zones    = [...document.querySelectorAll('#zones-group input:checked')].map(c => c.value);
+  const zones    = getSelectedZones();
 
   if (!name)    { showFieldError('err-name');    document.getElementById('f-name').classList.add('invalid');    ok = false; } else { hideFieldError('err-name');    document.getElementById('f-name').classList.remove('invalid'); }
   if (!whatsapp){ showFieldError('err-whatsapp');document.getElementById('f-whatsapp').classList.add('invalid');ok = false; } else { hideFieldError('err-whatsapp');document.getElementById('f-whatsapp').classList.remove('invalid'); }
@@ -341,6 +346,15 @@ function validate() {
   return ok;
 }
 
+// ── Zone buttons ─────────────────────────────────────────
+function selectZone(btn) {
+  btn.classList.toggle('selected');
+  hideFieldError('err-zones');
+}
+function getSelectedZones() {
+  return [...document.querySelectorAll('.zone-btn.selected')].map(b => b.dataset.zone);
+}
+
 // ── Submit ────────────────────────────────────────────────
 async function submitForm() {
   if (!validate()) return;
@@ -350,7 +364,7 @@ async function submitForm() {
   btn.disabled = true;
   document.getElementById('error-banner').classList.remove('show');
 
-  const zones = [...document.querySelectorAll('#zones-group input:checked')].map(c => c.value);
+  const zones = getSelectedZones();
 
   const payload = {
     nom:           document.getElementById('f-name').value.trim(),
